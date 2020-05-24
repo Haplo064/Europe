@@ -81,6 +81,7 @@ namespace AccurateCountDown
         {
             this.pluginInterface.UiBuilder.OnBuildUi -= DrawWindow;
             this.pluginInterface.UiBuilder.OnOpenConfigUi -= ConfigWindow;
+            ukFuncHook1.Disable();
         }
 
         private void ConfigWindow(object Sender, EventArgs args)
