@@ -1,0 +1,76 @@
+# Prerequisites
+*.d
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+*.lock
+*.ide
+*.ide-shm
+.vs/Europe/v16/.suo
+.vs/Europe/v16/Server/sqlite3/storage.ide-wal
+*.xml
+*.config
+obj/AccurateCountDown.csproj.nuget.cache
+obj/AccurateCountDown.csproj.nuget.dgspec.json
+obj/AccurateCountDown.csproj.nuget.g.props
+obj/AccurateCountDown.csproj.nuget.g.targets
+obj/Debug/AccurateCountDown.csproj.CopyComplete
+obj/Debug/AccurateCountDown.csproj.FileListAbsolute.txt
+obj/Debug/AccurateCountDown.csprojAssemblyReference.cache
+obj/Debug/DesignTimeResolveAssemblyReferencesInput.cache
+obj/Debug/Europe.csproj.CopyComplete
+obj/Debug/Europe.csproj.FileListAbsolute.txt
+obj/Debug/Europe.csprojAssemblyReference.cache
+obj/Europe.csproj.nuget.cache
+obj/Europe.csproj.nuget.dgspec.json
+obj/Europe.csproj.nuget.g.props
+obj/Europe.csproj.nuget.g.targets
+obj/project.assets.json
+Properties/AssemblyInfo.cs
