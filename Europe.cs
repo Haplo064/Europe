@@ -22,6 +22,7 @@ namespace AccurateCountDown
         public bool config = false;
         public bool start = true;
         public float scale = 2f;
+        public bool debug = false;
 
         static bool no_titlebar = true;
         static bool no_scrollbar = true;
@@ -78,69 +79,15 @@ namespace AccurateCountDown
                 HelpMessage = ""
             });
 
-            try
-            { enabled = Configuration.Enabled; }
-            catch (Exception)
-            {
-                PluginLog.LogError("Failed to set Enabled");
-                enabled = true;
-            }
+            enabled = Configuration.Enabled;
+            enableEnc = Configuration.EnabledENC;
+            scale = Configuration.Scale.Value;
+            enableCDEnc = Configuration.EnabledCDENC;
+            no_titlebar = Configuration.No_Titlebar;
+            no_move = Configuration.No_Move;
+            no_resize = Configuration.No_Resize;
+            no_mouse = Configuration.No_Mouse;
 
-            try
-            { enableEnc = Configuration.EnabledENC; }
-            catch (Exception)
-            {
-                PluginLog.LogError("Failed to set EnabledENC");
-                enableEnc = false;
-            }
-
-            try
-            { scale = Configuration.Scale.Value; }
-            catch (Exception)
-            {
-                PluginLog.LogError("Failed to set scale");
-                scale = 1f;
-            }
-
-            try
-            { enableCDEnc = Configuration.EnabledCDENC; }
-            catch (Exception)
-            {
-                PluginLog.LogError("Failed to set EnabledCDENC");
-                enableCDEnc = false;
-            }
-
-            try
-            { no_titlebar = Configuration.No_Titlebar; }
-            catch (Exception)
-            {
-                PluginLog.LogError("Failed to set No_Titlebar");
-                no_titlebar = false;
-            }
-
-            try
-            { no_move = Configuration.No_Move; }
-            catch (Exception)
-            {
-                PluginLog.LogError("Failed to set No_Move");
-                no_move = false;
-            }
-
-            try
-            { no_resize = Configuration.No_Resize; }
-            catch (Exception)
-            {
-                PluginLog.LogError("Failed to set No_Resize");
-                no_resize = false;
-            }
-
-            try
-            { no_mouse = Configuration.No_Mouse; }
-            catch (Exception)
-            {
-                PluginLog.LogError("Failed to set No_Mouse");
-                no_mouse = false;
-            }
 
 
             countdownPTR = pluginInterface.TargetModuleScanner.ScanText("??  89 ??  ??  ?? 57 48 83 ??  ?? 8B ??  ?? 48 8B ??  ?? 41 ?? 48 8B");
@@ -226,7 +173,8 @@ namespace AccurateCountDown
                 ImGui.Checkbox("No Resizing", ref no_resize);
                 ImGui.Checkbox("Clickthrough", ref no_mouse);
                 ImGui.InputFloat("Font Scale", ref scale);
-
+                ImGui.Separator();
+                ImGui.Checkbox("Debug", ref debug);
                 if (no_titlebar) window_flags |= ImGuiWindowFlags.NoTitleBar;
                 window_flags |= ImGuiWindowFlags.NoScrollbar;
                 if (no_move) window_flags |= ImGuiWindowFlags.NoMove;
@@ -243,13 +191,28 @@ namespace AccurateCountDown
                 ImGui.End();
             }
 
+            if (debug)
+            {
+                ImGui.Begin("Encounter", ref debug, window_flags);
+                ImGui.SetWindowFontScale(scale);
+                ImGui.Text("99:99");
+                ImGui.SetWindowFontScale(1f);
+                ImGui.End();
+
+                ImGui.Begin("Countdown", ref debug, window_flags);
+                ImGui.SetWindowFontScale(scale);
+                ImGui.Text("99:9.99");
+                ImGui.SetWindowFontScale(1f);
+                ImGui.End();
+            }
+
             if (enabled)
             {
                 if (countDown != 0)
                 {
                     if (Marshal.PtrToStructure<float>((IntPtr)countDown + 0x24) > 0)
                     {
-                        ImGui.Begin("Countdown", ref config, window_flags);
+                        ImGui.Begin("Countdown", ref enabled, window_flags);
                         ImGui.SetWindowFontScale(scale);
                         ImGui.Text(String.Format("{00:0.00}", Marshal.PtrToStructure<float>((IntPtr)countDown + 0x24)));
                         ImGui.SetWindowFontScale(1f);
@@ -258,7 +221,7 @@ namespace AccurateCountDown
                     }
                     if(Marshal.PtrToStructure<float>((IntPtr)countDown + 0x24) <= 0 && (DateTime.Now - CDEnd).TotalSeconds < 3)
                     {
-                        ImGui.Begin("Countdown", ref config, window_flags);
+                        ImGui.Begin("Countdown", ref enabled, window_flags);
                         ImGui.SetWindowFontScale(scale);
                         ImGui.Text("FIGHT");
                         ImGui.SetWindowFontScale(1f);
@@ -292,13 +255,15 @@ namespace AccurateCountDown
                 {
                     TimeSpan diff = EncEnd - EncStart;
 
-                    ImGui.Begin("Encounter", ref config, window_flags);
+                    ImGui.Begin("Encounter", ref enableEnc, window_flags);
                     ImGui.SetWindowFontScale(scale);
                     ImGui.Text(diff.ToString(@"mm\:ss"));
                     ImGui.SetWindowFontScale(1f);
                     ImGui.End();
                 }
             }
+
+
 
         }
 
