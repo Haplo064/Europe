@@ -7,252 +7,228 @@ using System.Runtime.InteropServices;
 using Dalamud.Game.Command;
 using Dalamud.Hooking;
 
-
 namespace AccurateCountDown
 {
     public class Europe : IDalamudPlugin
     {
         public string Name => "Accurate Count Down";
-        private DalamudPluginInterface pluginInterface;
-        public Config Configuration;
-
-        public bool enabled = true;
-        public bool enableEnc = true;
-        public bool enableCDEnc = true;
-        public bool config = false;
-        public bool start = true;
-        public float scale = 2f;
-        public bool debug = false;
-        public int pauseCheck = 0;
-        public float lastTime = 0;
-        public bool flipSwitch = true;
-
-        static bool no_titlebar = true;
-        static bool no_scrollbar = true;
-        static bool no_move = false;
-        static bool no_resize = false;
-        static bool no_mouse = false;
-        static bool no_box = false;
-
-
+        private DalamudPluginInterface _pluginInterface;
+        private Config _configuration;
+        private bool _enabled = true;
+        private bool _enableEnc = true;
+        private bool _enableCdEnc = true;
+        private bool _config;
+        private bool _start = true;
+        private float _scale = 2f;
+        private bool _debug;
+        private int _pauseCheck;
+        private float _lastTime;
+        private bool _flipSwitch = true;
+        private static bool _noTitlebar = true;
+        private static bool _noMove;
+        private static bool _noResize;
+        private static bool _noMouse;
+        private static bool _noBox;
+        
         //void FUN_140298840(longlong param_1)
         [UnmanagedFunctionPointer(CallingConvention.ThisCall, CharSet = CharSet.Ansi)]
-        private delegate IntPtr CountdownTimer(ulong param_1);
-        private CountdownTimer countdownTimer;
-        private Hook<CountdownTimer> countdownTimerHook;
-        public IntPtr countdownPTR;
-
-        public ulong countDown = 0;
-        public float countUp = 0.00f;
-        public DateTime CDEnd = new DateTime(2010);
-        public DateTime EncStart = new DateTime(1991);
-        public DateTime EncEnd = new DateTime(2020);
-
-        public Num.Vector4 colour;
-        public bool check = true;
-
-        public IntPtr stateFlags;
-        public bool[] stateFlagsArray;
-
+        private delegate IntPtr CountdownTimer(ulong param1);
+        private CountdownTimer _countdownTimer;
+        private Hook<CountdownTimer> _countdownTimerHook;
+        private IntPtr _countdownPtr;
+        private ulong _countDown ;
+        private DateTime _cdEnd = new DateTime(2010);
+        private DateTime _encStart = new DateTime(1991);
+        private DateTime _encEnd = new DateTime(2020);
+        
         public void Initialize(DalamudPluginInterface pluginInterface)
         {
-            stateFlags = IntPtr.Zero;
-            stateFlagsArray = new bool[100];
-
-            this.pluginInterface = pluginInterface;
-            Configuration = pluginInterface.GetPluginConfig() as Config ?? new Config();
-
-            this.pluginInterface.UiBuilder.OnBuildUi += DrawWindow;
-            this.pluginInterface.UiBuilder.OnOpenConfigUi += ConfigWindow;
-            this.pluginInterface.CommandManager.AddHandler("/ctd", new CommandInfo(Command)
+            _pluginInterface = pluginInterface;
+            _configuration = pluginInterface.GetPluginConfig() as Config ?? new Config();
+            _pluginInterface.UiBuilder.OnBuildUi += DrawWindow;
+            _pluginInterface.UiBuilder.OnOpenConfigUi += ConfigWindow;
+            _pluginInterface.CommandManager.AddHandler("/ctd", new CommandInfo(Command)
             {
                 HelpMessage = "Accurate Countdown config."
             });
 
-            enabled = Configuration.Enabled;
-            enableEnc = Configuration.EnabledENC;
-            scale = Configuration.Scale.Value;
-            enableCDEnc = Configuration.EnabledCDENC;
-            no_titlebar = Configuration.No_Titlebar;
-            no_move = Configuration.No_Move;
-            no_resize = Configuration.No_Resize;
-            no_mouse = Configuration.No_Mouse;
-            no_box = Configuration.No_Box;
-
-
-
-            //countdownPTR = pluginInterface.TargetModuleScanner.ScanText("?? 89 ?? ?? ?? 57 48 83 ?? ?? 8B ?? ?? 48 8B ?? ?? 41 ?? 48 8B");
-            countdownPTR = pluginInterface.TargetModuleScanner.ScanText("48 89 5C 24 ?? 57 48 83 EC 40 8B 41");
-            //funcPtr1 = pluginInterface.TargetModuleScanner.Module.BaseAddress + 0x298840;
-            countdownTimer = new CountdownTimer(countdownTimerFunc);
+            _enabled = _configuration.Enabled;
+            _enableEnc = _configuration.EnabledEnc;
+            _scale = _configuration.Scale;
+            _enableCdEnc = _configuration.EnabledCdenc;
+            _noTitlebar = _configuration.NoTitlebar;
+            _noMove = _configuration.NoMove;
+            _noResize = _configuration.NoResize;
+            _noMouse = _configuration.NoMouse;
+            _noBox = _configuration.NoBox;
+            _countdownPtr = pluginInterface.TargetModuleScanner.ScanText("48 89 5C 24 ?? 57 48 83 EC 40 8B 41");
+            _countdownTimer = CountdownTimerFunc;
             try
-            {countdownTimerHook = new Hook<CountdownTimer>(countdownPTR, countdownTimer, this); countdownTimerHook.Enable();}
+            {_countdownTimerHook = new Hook<CountdownTimer>(_countdownPtr, _countdownTimer, this); _countdownTimerHook.Enable();}
             catch(Exception e)
-            {PluginLog.Log("BAD\n"+e.ToString());}
-
-
+            {PluginLog.Log("BAD\n"+e);}
         }
 
-        public IntPtr countdownTimerFunc(ulong param_1)
+        private IntPtr CountdownTimerFunc(ulong param1)
         {
-            //PluginLog.Log(param_1.ToString());
-            countDown = param_1;
-            return countdownTimerHook.Original(param_1);
+            _countDown = param1;
+            return _countdownTimerHook.Original(param1);
         }
 
-        public void Command(string command, string arguments)
+        private void Command(string command, string arguments)
         {
-            config = true;
+            _config = true;
         }
 
         public void Dispose()
         {
-            this.pluginInterface.UiBuilder.OnBuildUi -= DrawWindow;
-            this.pluginInterface.UiBuilder.OnOpenConfigUi -= ConfigWindow;
-            this.pluginInterface.CommandManager.RemoveHandler("/ctd");
-            countdownTimerHook.Disable();
+            _pluginInterface.UiBuilder.OnBuildUi -= DrawWindow;
+            _pluginInterface.UiBuilder.OnOpenConfigUi -= ConfigWindow;
+            _pluginInterface.CommandManager.RemoveHandler("/ctd");
+            _countdownTimerHook.Disable();
         }
 
-        private void ConfigWindow(object Sender, EventArgs args)
+        private void ConfigWindow(object sender, EventArgs args)
         {
-            config = true;
+            _config = true;
         }
 
         private void DrawWindow()
         {
-            ImGuiWindowFlags window_flags = 0;
-            if (no_titlebar) window_flags |= ImGuiWindowFlags.NoTitleBar;
-            if (no_scrollbar) window_flags |= ImGuiWindowFlags.NoScrollbar;
-            if (no_move) window_flags |= ImGuiWindowFlags.NoMove;
-            if (no_resize) window_flags |= ImGuiWindowFlags.NoResize;
-            if (no_mouse) window_flags |= ImGuiWindowFlags.NoMouseInputs;
-            if (no_box) window_flags |= ImGuiWindowFlags.NoBackground;
+            ImGuiWindowFlags windowFlags = 0;
+            if (_noTitlebar) windowFlags |= ImGuiWindowFlags.NoTitleBar;
+            windowFlags |= ImGuiWindowFlags.NoScrollbar;
+            if (_noMove) windowFlags |= ImGuiWindowFlags.NoMove;
+            if (_noResize) windowFlags |= ImGuiWindowFlags.NoResize;
+            if (_noMouse) windowFlags |= ImGuiWindowFlags.NoMouseInputs;
+            if (_noBox) windowFlags |= ImGuiWindowFlags.NoBackground;
 
-            if (config)
+            if (_config)
             {
                 ImGui.SetNextWindowSize(new Num.Vector2(300, 500), ImGuiCond.FirstUseEver);
-                ImGui.Begin("Accurate Countdown Config", ref config);
-                ImGui.Checkbox("Enable Countdown", ref enabled);
-                ImGui.Checkbox("Enable EncounterTimer", ref enableEnc);
-                ImGui.Checkbox(" - Only show EncounterTimer after a CountDown", ref enableCDEnc);
-                ImGui.Checkbox("No TitleBar", ref no_titlebar);
-                ImGui.Checkbox("No Background", ref no_box);
-                ImGui.Checkbox("No Moving", ref no_move);
-                ImGui.Checkbox("No Resizing", ref no_resize);
-                ImGui.Checkbox("Clickthrough", ref no_mouse);
-                ImGui.InputFloat("Font Scale", ref scale);
+                ImGui.Begin("Accurate Countdown Config", ref _config);
+                ImGui.Checkbox("Enable Countdown", ref _enabled);
+                ImGui.Checkbox("Enable EncounterTimer", ref _enableEnc);
+                ImGui.Checkbox(" - Only show EncounterTimer after a CountDown", ref _enableCdEnc);
+                ImGui.Checkbox("No TitleBar", ref _noTitlebar);
+                ImGui.Checkbox("No Background", ref _noBox);
+                ImGui.Checkbox("No Moving", ref _noMove);
+                ImGui.Checkbox("No Resizing", ref _noResize);
+                ImGui.Checkbox("Clickthrough", ref _noMouse);
+                ImGui.InputFloat("Font Scale", ref _scale);
                 ImGui.Separator();
-                ImGui.Checkbox("Debug", ref debug);
+                ImGui.Checkbox("Debug", ref _debug);
 
-                if (no_titlebar) window_flags |= ImGuiWindowFlags.NoTitleBar;
-                window_flags |= ImGuiWindowFlags.NoScrollbar;
-                if (no_move) window_flags |= ImGuiWindowFlags.NoMove;
-                if (no_resize) window_flags |= ImGuiWindowFlags.NoResize;
-                window_flags |= ImGuiWindowFlags.NoCollapse;
-                if (no_mouse) window_flags |= ImGuiWindowFlags.NoMouseInputs;
-                if (no_box) window_flags |= ImGuiWindowFlags.NoBackground;
+                if (_noTitlebar) windowFlags |= ImGuiWindowFlags.NoTitleBar;
+                windowFlags |= ImGuiWindowFlags.NoScrollbar;
+                if (_noMove) windowFlags |= ImGuiWindowFlags.NoMove;
+                if (_noResize) windowFlags |= ImGuiWindowFlags.NoResize;
+                windowFlags |= ImGuiWindowFlags.NoCollapse;
+                if (_noMouse) windowFlags |= ImGuiWindowFlags.NoMouseInputs;
+                if (_noBox) windowFlags |= ImGuiWindowFlags.NoBackground;
 
                 if (ImGui.Button("Save and Close Config"))
                 {
                     SaveConfig();
-                    config = false;
+                    _config = false;
                 }
+                ImGui.SameLine();
+                ImGui.PushStyleColor(ImGuiCol.Button, 0xFF000000 | 0x005E5BFF);
+                ImGui.PushStyleColor(ImGuiCol.ButtonActive, 0xDD000000 | 0x005E5BFF);
+                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, 0xAA000000 | 0x005E5BFF);
+
+                if (ImGui.Button("Buy Haplo a Hot Chocolate"))
+                {
+                    System.Diagnostics.Process.Start("https://ko-fi.com/haplo");
+                }
+                ImGui.PopStyleColor(3);
                 ImGui.End();
             }
 
-            if (debug)
+            if (_debug)
             {
-                ImGui.Begin("Encounter", ref debug, window_flags);
-                ImGui.SetWindowFontScale(scale);
+                ImGui.Begin("Encounter", ref _debug, windowFlags);
+                ImGui.SetWindowFontScale(_scale);
                 ImGui.Text("99:99");
                 ImGui.SetWindowFontScale(1f);
                 ImGui.End();
 
-                ImGui.Begin("Countdown", ref debug, window_flags);
-                ImGui.SetWindowFontScale(scale);
+                ImGui.Begin("Countdown", ref _debug, windowFlags);
+                ImGui.SetWindowFontScale(_scale);
                 ImGui.Text("99:9.99");
                 ImGui.SetWindowFontScale(1f);
                 ImGui.End();
             }
 
-            if (enabled && countDown !=0)
+            if (_enabled && _countDown !=0)
             {
-                if (Marshal.PtrToStructure<float>((IntPtr)countDown + 0x2c) == lastTime) { pauseCheck++; }
-                else { pauseCheck = 0; flipSwitch = true; }
+                if (Marshal.PtrToStructure<float>((IntPtr)_countDown + 0x2c) == _lastTime) { _pauseCheck++; }
+                else { _pauseCheck = 0; _flipSwitch = true; }
 
-                if (pauseCheck > 50) { flipSwitch = false; }
+                if (_pauseCheck > 50) { _flipSwitch = false; }
 
-                if (Marshal.PtrToStructure<float>((IntPtr)countDown + 0x2c) > 0 && flipSwitch)
+                if (Marshal.PtrToStructure<float>((IntPtr)_countDown + 0x2c) > 0 && _flipSwitch)
                 {
-                    ImGui.Begin("Countdown", ref enabled, window_flags);
-                    ImGui.SetWindowFontScale(scale);
-                    ImGui.Text(String.Format("{00:0.00}", Marshal.PtrToStructure<float>((IntPtr)countDown + 0x2c)));
+                    ImGui.Begin("Countdown", ref _enabled, windowFlags);
+                    ImGui.SetWindowFontScale(_scale);
+                    ImGui.Text($"{Marshal.PtrToStructure<float>((IntPtr) _countDown + 0x2c):0.00}");
                     ImGui.SetWindowFontScale(1f);
                     ImGui.End();
-                    CDEnd = DateTime.Now;
+                    _cdEnd = DateTime.Now;
                 }
 
-                if(Marshal.PtrToStructure<float>((IntPtr)countDown + 0x2c) <= 0 && (DateTime.Now - CDEnd).TotalSeconds < 3 && flipSwitch)
+                if(Marshal.PtrToStructure<float>((IntPtr)_countDown + 0x2c) <= 0 && (DateTime.Now - _cdEnd).TotalSeconds < 3 && _flipSwitch)
                 {
-                    ImGui.Begin("Countdown", ref enabled, window_flags);
-                    ImGui.SetWindowFontScale(scale);
+                    ImGui.Begin("Countdown", ref _enabled, windowFlags);
+                    ImGui.SetWindowFontScale(_scale);
                     ImGui.Text("FIGHT");
                     ImGui.SetWindowFontScale(1f);
                     ImGui.End();
                 }
-                lastTime = Marshal.PtrToStructure<float>((IntPtr)countDown + 0x2c);
+                _lastTime = Marshal.PtrToStructure<float>((IntPtr)_countDown + 0x2c);
             }
 
-            if (enableEnc)
+            if (!_enableEnc) return;
+            if (_pluginInterface.ClientState.Condition[Dalamud.Game.ClientState.ConditionFlag.InCombat])
             {
-
-                if (pluginInterface.ClientState.Condition[Dalamud.Game.ClientState.ConditionFlag.InCombat])
+                if (_start)
                 {
-                    if (start)
-                    {
-                        start = false;
-                        EncStart = DateTime.Now;
-                    }
-                    EncEnd = DateTime.Now;
+                    _start = false;
+                    _encStart = DateTime.Now;
                 }
-                else
-                {
-                    start = true;
-                }
-
-                if (enableCDEnc && Math.Abs((DateTime.Now - CDEnd).TotalSeconds - (DateTime.Now - EncStart).TotalSeconds) >= 10)
-                {
-                    return;
-                }
-
-                if ((DateTime.Now - EncEnd).TotalSeconds <= 10)
-                {
-                    TimeSpan diff = EncEnd - EncStart;
-
-                    ImGui.Begin("Encounter", ref enableEnc, window_flags);
-                    ImGui.SetWindowFontScale(scale);
-                    ImGui.Text(diff.ToString(@"mm\:ss"));
-                    ImGui.SetWindowFontScale(1f);
-                    ImGui.End();
-                }
+                _encEnd = DateTime.Now;
+            }
+            else
+            {
+                _start = true;
             }
 
+            if (_enableCdEnc && Math.Abs((DateTime.Now - _cdEnd).TotalSeconds - (DateTime.Now - _encStart).TotalSeconds) >= 10)
+            {
+                return;
+            }
 
-
+            if (!((DateTime.Now - _encEnd).TotalSeconds <= 10)) return;
+            var diff = _encEnd - _encStart;
+            ImGui.Begin("Encounter", ref _enableEnc, windowFlags);
+            ImGui.SetWindowFontScale(_scale);
+            ImGui.Text(diff.ToString(@"mm\:ss"));
+            ImGui.SetWindowFontScale(1f);
+            ImGui.End();
         }
 
-        public void SaveConfig()
+        private void SaveConfig()
         {
-            Configuration.Enabled = enabled;
-            Configuration.EnabledENC = enableEnc;
-            Configuration.EnabledCDENC = enableCDEnc;
-            Configuration.Scale = scale;
-            Configuration.No_Titlebar = no_titlebar;
-            Configuration.No_Move = no_move;
-            Configuration.No_Resize = no_resize;
-            Configuration.No_Mouse = no_mouse;
-            Configuration.No_Box = no_box;
-            this.pluginInterface.SavePluginConfig(Configuration);
+            _configuration.Enabled = _enabled;
+            _configuration.EnabledEnc = _enableEnc;
+            _configuration.EnabledCdenc = _enableCdEnc;
+            _configuration.Scale = _scale;
+            _configuration.NoTitlebar = _noTitlebar;
+            _configuration.NoMove = _noMove;
+            _configuration.NoResize = _noResize;
+            _configuration.NoMouse = _noMouse;
+            _configuration.NoBox = _noBox;
+            _pluginInterface.SavePluginConfig(_configuration);
         }
     }
 
@@ -260,15 +236,13 @@ namespace AccurateCountDown
     {
         public int Version { get; set; } = 0;
         public bool Enabled { get; set; } = true;
-        public bool EnabledENC { get; set; } = false;
-        public bool EnabledCDENC { get; set; } = false;
-        public float? Scale { get; set; } = 1;
-        public bool No_Titlebar { get; set; } = true;
-        public bool No_Move { get; set; } = false;
-        public bool No_Resize { get; set; } = false;
-        public bool No_Mouse { get; set; } = false;
-        public bool No_Box { get; set; } = false;
-        public Num.Vector4 Colour { get; set; } = new Num.Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-
+        public bool EnabledEnc { get; set; }
+        public bool EnabledCdenc { get; set; }
+        public float Scale { get; set; } = 1;
+        public bool NoTitlebar { get; set; } = true;
+        public bool NoMove { get; set; }
+        public bool NoResize { get; set; }
+        public bool NoMouse { get; set; }
+        public bool NoBox { get; set; }
     }
 }
