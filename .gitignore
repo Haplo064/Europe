@@ -63,4 +63,5 @@ obj/*
 obj/Release/*
 Properties/AssemblyInfo.cs
 
-obj/Release/AccurateCountDown.csprojAssemblyReference.cache
+obj/
+bin/

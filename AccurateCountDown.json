@@ -1,0 +1,10 @@
+﻿{
+  "Author": "Haplo064",
+  "Name": "Accurate CountDown",
+  "Punchline": "Adds a text line showing your current map.",
+  "Description": "Nothing much more to say really.",
+  "Tags": [ "Combat", "Countdown", "Timer", "UI"],
+  "RepoUrl": "https://github.com/Haplo/Europe",
+  "DalamudApiLevel": 4,
+  "Changelog": "Updated for API4"
+}
