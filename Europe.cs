@@ -6,13 +6,22 @@ using Num = System.Numerics;
 using System.Runtime.InteropServices;
 using Dalamud.Game.Command;
 using Dalamud.Hooking;
+using Dalamud.Logging;
+using Dalamud.Game.ClientState;
+using Dalamud.IoC;
+using Dalamud.Game;
+using Dalamud.Game.ClientState.Conditions;
 
 namespace AccurateCountDown
 {
     public class Europe : IDalamudPlugin
     {
         public string Name => "Accurate Count Down";
-        private DalamudPluginInterface _pluginInterface;
+        [PluginService] private DalamudPluginInterface PluginInterface { get; set; }
+        private CommandManager CommandManager { get; init; }
+        [PluginService] public ClientState State { get; private set; }
+        [PluginService] public static SigScanner SigScanner { get; private set; }
+        [PluginService] public static Condition Condition { get; private set; }
         private Config _configuration;
         private bool _enabled = true;
         private bool _enableEnc = true;
@@ -41,14 +50,16 @@ namespace AccurateCountDown
         private DateTime _encStart = new DateTime(1991);
         private DateTime _encEnd = new DateTime(2020);
         
-        public void Initialize(DalamudPluginInterface pluginInterface)
+        public Europe (CommandManager commandManager)
         {
-            _pluginInterface = pluginInterface;
-            _configuration = pluginInterface.GetPluginConfig() as Config ?? new Config();
-            _pluginInterface.UiBuilder.OnBuildUi += DrawWindow;
-            _pluginInterface.UiBuilder.OnOpenConfigUi += ConfigWindow;
-            _pluginInterface.CommandManager.AddHandler("/ctd", new CommandInfo(Command)
+            CommandManager = commandManager;
+
+            _configuration = PluginInterface.GetPluginConfig() as Config ?? new Config();
+            PluginInterface.UiBuilder.Draw += DrawWindow;
+            PluginInterface.UiBuilder.OpenConfigUi += ConfigWindow;
+            CommandManager.AddHandler("/ctd", new CommandInfo(Command)
             {
+                ShowInHelp = true,
                 HelpMessage = "Accurate Countdown config."
             });
 
@@ -61,10 +72,11 @@ namespace AccurateCountDown
             _noResize = _configuration.NoResize;
             _noMouse = _configuration.NoMouse;
             _noBox = _configuration.NoBox;
-            _countdownPtr = pluginInterface.TargetModuleScanner.ScanText("48 89 5C 24 ?? 57 48 83 EC 40 8B 41");
+            _countdownPtr = SigScanner.ScanText("48 89 5C 24 ?? 57 48 83 EC 40 8B 41");
             _countdownTimer = CountdownTimerFunc;
             try
-            {_countdownTimerHook = new Hook<CountdownTimer>(_countdownPtr, _countdownTimer, this); _countdownTimerHook.Enable();}
+            {_countdownTimerHook = new Hook<CountdownTimer>(_countdownPtr, _countdownTimer); 
+                _countdownTimerHook.Enable();}
             catch(Exception e)
             {PluginLog.Log("BAD\n"+e);}
         }
@@ -82,13 +94,13 @@ namespace AccurateCountDown
 
         public void Dispose()
         {
-            _pluginInterface.UiBuilder.OnBuildUi -= DrawWindow;
-            _pluginInterface.UiBuilder.OnOpenConfigUi -= ConfigWindow;
-            _pluginInterface.CommandManager.RemoveHandler("/ctd");
+            PluginInterface.UiBuilder.Draw -= DrawWindow;
+            PluginInterface.UiBuilder.OpenConfigUi -= ConfigWindow;
+            CommandManager.RemoveHandler("/ctd");
             _countdownTimerHook.Disable();
         }
 
-        private void ConfigWindow(object sender, EventArgs args)
+        private void ConfigWindow()
         {
             _config = true;
         }
@@ -189,7 +201,7 @@ namespace AccurateCountDown
             }
 
             if (!_enableEnc) return;
-            if (_pluginInterface.ClientState.Condition[Dalamud.Game.ClientState.ConditionFlag.InCombat])
+            if (Condition[ConditionFlag.InCombat])
             {
                 if (_start)
                 {
@@ -228,7 +240,7 @@ namespace AccurateCountDown
             _configuration.NoResize = _noResize;
             _configuration.NoMouse = _noMouse;
             _configuration.NoBox = _noBox;
-            _pluginInterface.SavePluginConfig(_configuration);
+            PluginInterface.SavePluginConfig(_configuration);
         }
     }
 
